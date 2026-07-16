@@ -1,9 +1,0 @@
-text = input("Enter the Plain Text: ").upper()
-key = int(input("Enter the Key (1-25): "))
-cipher_text = ""
-for ch in text:
-    if ch.isalpha():
-        cipher_text += chr((ord(ch) - 65 + key) % 26 + 65)
-    else:
-        cipher_text += ch
-print("Cipher Text :", cipher_text)
