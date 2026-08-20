@@ -1,0 +1,82 @@
+def create_matrix(key):
+    key = key.upper().replace("J", "I")
+
+    alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
+
+    letters = ""
+
+    for ch in key + alphabet:
+        if ch in alphabet and ch not in letters:
+            letters += ch
+
+    matrix = []
+    for i in range(0, 25, 5):
+        matrix.append(list(letters[i:i + 5]))
+
+    return matrix
+
+
+def find_position(matrix, letter):
+    for i in range(5):
+        for j in range(5):
+            if matrix[i][j] == letter:
+                return i, j
+
+    return None
+
+
+def decrypt_playfair(ciphertext, key):
+    matrix = create_matrix(key)
+
+    ciphertext = ''.join(ciphertext.upper().split())
+    ciphertext = ciphertext.replace("J", "I")
+
+    plaintext = ""
+
+    for i in range(0, len(ciphertext), 2):
+        a = ciphertext[i]
+        b = ciphertext[i + 1]
+
+        pos1 = find_position(matrix, a)
+        pos2 = find_position(matrix, b)
+
+        row1, col1 = pos1
+        row2, col2 = pos2
+
+        # Same row
+        if row1 == row2:
+            plaintext += matrix[row1][(col1 - 1) % 5]
+            plaintext += matrix[row2][(col2 - 1) % 5]
+
+        # Same column
+        elif col1 == col2:
+            plaintext += matrix[(row1 - 1) % 5][col1]
+            plaintext += matrix[(row2 - 1) % 5][col2]
+
+        # Rectangle
+        else:
+            plaintext += matrix[row1][col2]
+            plaintext += matrix[row2][col1]
+
+    return plaintext
+
+
+# Key
+key = "MONARCHY"
+
+# Ciphertext
+ciphertext = """
+KXJEY UREBE ZWEHE WRYTU HEYFS
+KREHE GOYFI WTTTU OLKSY CAJPO
+BOTEI ZONTX BYBNT GONEY CUZWR
+GDSON SXBOU YWRHE BAAHY USEDQ
+"""
+
+print("Playfair Matrix:")
+matrix = create_matrix(key)
+
+for row in matrix:
+    print(" ".join(row))
+
+print("\nDecrypted Message:")
+print(decrypt_playfair(ciphertext, key))
