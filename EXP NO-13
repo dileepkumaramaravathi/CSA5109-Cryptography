@@ -1,0 +1,131 @@
+import string
+import math
+
+# Key matrix
+K = [
+    [9, 4],
+    [5, 7]
+]
+
+# Message
+message = "meet me at the usual place at ten rather than eight oclock"
+
+
+# -------------------------------------------------
+# ENCRYPTION
+# -------------------------------------------------
+
+def encrypt(text):
+    text = ''.join(c for c in text.upper() if c.isalpha())
+
+    # Add X if length is odd
+    if len(text) % 2 != 0:
+        text += 'X'
+
+    ciphertext = ""
+
+    for i in range(0, len(text), 2):
+        x1 = ord(text[i]) - ord('A')
+        x2 = ord(text[i + 1]) - ord('A')
+
+        y1 = (K[0][0] * x1 + K[0][1] * x2) % 26
+        y2 = (K[1][0] * x1 + K[1][1] * x2) % 26
+
+        ciphertext += chr(y1 + ord('A'))
+        ciphertext += chr(y2 + ord('A'))
+
+    return ciphertext
+
+
+# -------------------------------------------------
+# MODULAR INVERSE
+# -------------------------------------------------
+
+def mod_inverse(a, m):
+    for x in range(1, m):
+        if (a * x) % m == 1:
+            return x
+    return None
+
+
+# -------------------------------------------------
+# DECRYPTION
+# -------------------------------------------------
+
+def decrypt(ciphertext):
+    determinant = (K[0][0] * K[1][1] -
+                   K[0][1] * K[1][0]) % 26
+
+    det_inverse = mod_inverse(determinant, 26)
+
+    if det_inverse is None:
+        print("Key matrix cannot be inverted!")
+        return
+
+    # Inverse matrix:
+    #
+    # [ d  -b ]
+    # [ -c  a ]
+    #
+    inverse = [
+        [(det_inverse * K[1][1]) % 26,
+         (-det_inverse * K[0][1]) % 26],
+
+        [(-det_inverse * K[1][0]) % 26,
+         (det_inverse * K[0][0]) % 26]
+    ]
+
+    plaintext = ""
+
+    for i in range(0, len(ciphertext), 2):
+        y1 = ord(ciphertext[i]) - ord('A')
+        y2 = ord(ciphertext[i + 1]) - ord('A')
+
+        x1 = (inverse[0][0] * y1 +
+              inverse[0][1] * y2) % 26
+
+        x2 = (inverse[1][0] * y1 +
+              inverse[1][1] * y2) % 26
+
+        plaintext += chr(x1 + ord('A'))
+        plaintext += chr(x2 + ord('A'))
+
+    return plaintext
+
+
+# -------------------------------------------------
+# MAIN
+# -------------------------------------------------
+
+ciphertext = encrypt(message)
+
+print("Original Message:")
+print(message)
+
+print("\nKey Matrix:")
+print("[9 4]")
+print("[5 7]")
+
+print("\nEncrypted Ciphertext:")
+print(ciphertext)
+
+# Calculate determinant
+det = (9 * 7) - (4 * 5)
+
+print("\nDeterminant:")
+print("det(K) = (9 × 7) - (4 × 5)")
+print("det(K) =", det)
+
+print("\nDeterminant mod 26:")
+print(det % 26)
+
+inverse_det = mod_inverse(det % 26, 26)
+
+print("\nMultiplicative inverse of determinant:")
+print(inverse_det)
+
+print("\nInverse Key Matrix:")
+print(decrypt(ciphertext))
+
+print("\nDecrypted Plaintext:")
+print(decrypt(ciphertext))
