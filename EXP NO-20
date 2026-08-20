@@ -1,0 +1,171 @@
+BLOCK_SIZE = 8
+
+
+def xor_blocks(a, b):
+    return bytes(x ^ y for x, y in zip(a, b))
+
+
+# -------------------------------
+# Simple block cipher
+# -------------------------------
+
+def encrypt_block(block, key):
+    return xor_blocks(block, key)
+
+
+def decrypt_block(block, key):
+    return xor_blocks(block, key)
+
+
+# -------------------------------
+# ECB MODE
+# -------------------------------
+
+def ecb_encrypt(plaintext, key):
+    ciphertext = []
+
+    for block in plaintext:
+        ciphertext.append(encrypt_block(block, key))
+
+    return ciphertext
+
+
+def ecb_decrypt(ciphertext, key):
+    plaintext = []
+
+    for block in ciphertext:
+        plaintext.append(decrypt_block(block, key))
+
+    return plaintext
+
+
+# -------------------------------
+# CBC MODE
+# -------------------------------
+
+def cbc_encrypt(plaintext, key, iv):
+    ciphertext = []
+    previous = iv
+
+    for block in plaintext:
+        xored = xor_blocks(block, previous)
+        encrypted = encrypt_block(xored, key)
+
+        ciphertext.append(encrypted)
+        previous = encrypted
+
+    return ciphertext
+
+
+def cbc_decrypt(ciphertext, key, iv):
+    plaintext = []
+    previous = iv
+
+    for block in ciphertext:
+        decrypted = decrypt_block(block, key)
+        original = xor_blocks(decrypted, previous)
+
+        plaintext.append(original)
+        previous = block
+
+    return plaintext
+
+
+# -------------------------------
+# Display blocks
+# -------------------------------
+
+def display_blocks(blocks):
+    for i, block in enumerate(blocks, 1):
+        print("P" + str(i) + ":", block.decode())
+
+
+# -------------------------------
+# MAIN PROGRAM
+# -------------------------------
+
+print("ECB AND CBC ERROR PROPAGATION")
+print("=============================")
+
+plaintext = [
+    b"BLOCK001",
+    b"BLOCK002",
+    b"BLOCK003",
+    b"BLOCK004"
+]
+
+key = b"KEY12345"
+iv = b"INITVECT"
+
+
+# ===============================
+# ECB
+# ===============================
+
+print("\nORIGINAL PLAINTEXT")
+display_blocks(plaintext)
+
+ecb_cipher = ecb_encrypt(plaintext, key)
+
+print("\nECB CIPHERTEXT")
+
+for i, block in enumerate(ecb_cipher, 1):
+    print("C" + str(i) + ":", block.hex().upper())
+
+
+# Introduce one-bit error in C1
+ecb_error = ecb_cipher.copy()
+
+temp = bytearray(ecb_error[0])
+temp[0] ^= 1
+ecb_error[0] = bytes(temp)
+
+ecb_received = ecb_decrypt(ecb_error, key)
+
+print("\nECB AFTER ERROR IN C1")
+display_blocks(ecb_received)
+
+
+# ===============================
+# CBC
+# ===============================
+
+cbc_cipher = cbc_encrypt(plaintext, key, iv)
+
+print("\nCBC CIPHERTEXT")
+
+for i, block in enumerate(cbc_cipher, 1):
+    print("C" + str(i) + ":", block.hex().upper())
+
+
+# Introduce one-bit error in C1
+cbc_error = cbc_cipher.copy()
+
+temp = bytearray(cbc_error[0])
+temp[0] ^= 1
+cbc_error[0] = bytes(temp)
+
+cbc_received = cbc_decrypt(cbc_error, key, iv)
+
+print("\nCBC AFTER ERROR IN C1")
+display_blocks(cbc_received)
+
+
+# ===============================
+# ANSWERS
+# ===============================
+
+print("\nANSWERS")
+print("=======")
+
+print("\na. Are blocks beyond P2 affected?")
+print("No.")
+print("Only P1 and P2 are affected.")
+print("P3 and later blocks are recovered correctly.")
+
+print("\nb. If there is a bit error in P1:")
+print("The error affects C1.")
+print("At the receiver:")
+print("P1 is corrupted.")
+print("The corresponding bit in P2 is flipped.")
+print("P3 and later blocks are correct.")
