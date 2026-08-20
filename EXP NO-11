@@ -1,0 +1,16 @@
+import math
+
+# Number of possible Playfair keys
+keys = math.factorial(25)
+
+# Convert to power of 2
+power = math.log2(keys)
+
+print("Number of possible keys:")
+print(keys)
+
+print("\nApproximate power of 2:")
+print("2^", power)
+
+print("\nAnswer:")
+print("Approximately 2^84")
