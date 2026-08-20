@@ -1,0 +1,250 @@
+# ECB, CBC and CFB modes
+# Padding: 1 bit followed by 0 bits
+# No external libraries required
+
+
+BLOCK_SIZE = 8
+
+
+# --------------------------------------------------
+# Simple educational block cipher
+# --------------------------------------------------
+
+def encrypt_block(block, key):
+    return bytes(a ^ b for a, b in zip(block, key))
+
+
+def decrypt_block(block, key):
+    return bytes(a ^ b for a, b in zip(block, key))
+
+
+# --------------------------------------------------
+# Padding
+# 1 bit followed by zero bits
+# --------------------------------------------------
+
+def pad_data(data):
+    padding_length = BLOCK_SIZE - (len(data) % BLOCK_SIZE)
+
+    # Always add a complete padding block when
+    # data is already a multiple of block size.
+    if padding_length == 0:
+        padding_length = BLOCK_SIZE
+
+    return data + bytes([0x80]) + bytes(padding_length - 1)
+
+
+# --------------------------------------------------
+# ECB
+# --------------------------------------------------
+
+def ecb_encrypt(data, key):
+    ciphertext = []
+
+    for i in range(0, len(data), BLOCK_SIZE):
+        block = data[i:i + BLOCK_SIZE]
+        ciphertext.append(encrypt_block(block, key))
+
+    return ciphertext
+
+
+def ecb_decrypt(ciphertext, key):
+    plaintext = []
+
+    for block in ciphertext:
+        plaintext.append(decrypt_block(block, key))
+
+    return b''.join(plaintext)
+
+
+# --------------------------------------------------
+# CBC
+# --------------------------------------------------
+
+def cbc_encrypt(data, key, iv):
+    ciphertext = []
+    previous = iv
+
+    for i in range(0, len(data), BLOCK_SIZE):
+        block = data[i:i + BLOCK_SIZE]
+
+        xored = bytes(
+            a ^ b for a, b in zip(block, previous)
+        )
+
+        encrypted = encrypt_block(xored, key)
+
+        ciphertext.append(encrypted)
+
+        previous = encrypted
+
+    return ciphertext
+
+
+def cbc_decrypt(ciphertext, key, iv):
+    plaintext = []
+    previous = iv
+
+    for block in ciphertext:
+
+        decrypted = decrypt_block(block, key)
+
+        original = bytes(
+            a ^ b for a, b in zip(decrypted, previous)
+        )
+
+        plaintext.append(original)
+
+        previous = block
+
+    return b''.join(plaintext)
+
+
+# --------------------------------------------------
+# CFB
+# --------------------------------------------------
+
+def cfb_encrypt(data, key, iv):
+    ciphertext = []
+    previous = iv
+
+    for i in range(0, len(data), BLOCK_SIZE):
+
+        block = data[i:i + BLOCK_SIZE]
+
+        encrypted_iv = encrypt_block(previous, key)
+
+        cipher_block = bytes(
+            a ^ b for a, b in zip(block, encrypted_iv)
+        )
+
+        ciphertext.append(cipher_block)
+
+        previous = cipher_block
+
+    return ciphertext
+
+
+def cfb_decrypt(ciphertext, key, iv):
+    plaintext = []
+    previous = iv
+
+    for block in ciphertext:
+
+        encrypted_iv = encrypt_block(previous, key)
+
+        plain_block = bytes(
+            a ^ b for a, b in zip(block, encrypted_iv)
+        )
+
+        plaintext.append(plain_block)
+
+        previous = block
+
+    return b''.join(plaintext)
+
+
+# --------------------------------------------------
+# Display
+# --------------------------------------------------
+
+def print_blocks(name, blocks):
+    print("\n" + name)
+
+    for i, block in enumerate(blocks, 1):
+        print("Block", i, ":", block.hex().upper())
+
+
+# --------------------------------------------------
+# MAIN
+# --------------------------------------------------
+
+print("ECB, CBC AND CFB MODES")
+print("======================")
+
+plaintext = input("Enter plaintext: ").encode()
+
+key_text = input("Enter 8-character key: ")
+
+while len(key_text) != 8:
+    print("Key must contain exactly 8 characters.")
+    key_text = input("Enter 8-character key: ")
+
+key = key_text.encode()
+
+iv_text = input("Enter 8-character IV: ")
+
+while len(iv_text) != 8:
+    print("IV must contain exactly 8 characters.")
+    iv_text = input("Enter 8-character IV: ")
+
+iv = iv_text.encode()
+
+
+# Apply padding
+padded_data = pad_data(plaintext)
+
+print("\nOriginal Plaintext:")
+print(plaintext.decode())
+
+print("\nPadded Data (HEX):")
+print(padded_data.hex().upper())
+
+
+# --------------------------------------------------
+# ECB
+# --------------------------------------------------
+
+ecb_cipher = ecb_encrypt(padded_data, key)
+
+print_blocks("ECB CIPHERTEXT", ecb_cipher)
+
+ecb_plain = ecb_decrypt(ecb_cipher, key)
+
+print("\nECB DECRYPTED:")
+print(ecb_plain)
+
+
+# --------------------------------------------------
+# CBC
+# --------------------------------------------------
+
+cbc_cipher = cbc_encrypt(padded_data, key, iv)
+
+print_blocks("CBC CIPHERTEXT", cbc_cipher)
+
+cbc_plain = cbc_decrypt(cbc_cipher, key, iv)
+
+print("\nCBC DECRYPTED:")
+print(cbc_plain)
+
+
+# --------------------------------------------------
+# CFB
+# --------------------------------------------------
+
+cfb_cipher = cfb_encrypt(padded_data, key, iv)
+
+print_blocks("CFB CIPHERTEXT", cfb_cipher)
+
+cfb_plain = cfb_decrypt(cfb_cipher, key, iv)
+
+print("\nCFB DECRYPTED:")
+print(cfb_plain)
+
+
+# --------------------------------------------------
+# PADDING EXPLANATION
+# --------------------------------------------------
+
+print("\nWHY ADD A PADDING BLOCK?")
+print("========================")
+
+print("Even when the plaintext is already a complete block,")
+print("a padding block is added.")
+
+print("\nMotivation:")
+print("1. It makes the padding unambiguous.")
+print("2. The receiver can distinguish real data from padding.")
+print("3. It prevents ambiguity when removing padding.")
+print("4. It allows every message to have padding.")
