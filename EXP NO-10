@@ -1,0 +1,79 @@
+def find_position(matrix, letter):
+    for i in range(5):
+        for j in range(5):
+            if matrix[i][j] == letter:
+                return i, j
+    return None
+
+
+def encrypt_playfair(message, matrix):
+    # Keep only letters and convert to uppercase
+    message = ''.join(ch for ch in message.upper() if ch.isalpha())
+
+    # Playfair uses I/J in the same cell
+    message = message.replace("J", "I")
+
+    # Prepare pairs
+    pairs = []
+    i = 0
+
+    while i < len(message):
+        a = message[i]
+
+        if i + 1 < len(message):
+            b = message[i + 1]
+
+            if a == b:
+                pairs.append(a + "X")
+                i += 1
+            else:
+                pairs.append(a + b)
+                i += 2
+        else:
+            pairs.append(a + "X")
+            i += 1
+
+    encrypted = ""
+
+    for pair in pairs:
+        a = pair[0]
+        b = pair[1]
+
+        row1, col1 = find_position(matrix, a)
+        row2, col2 = find_position(matrix, b)
+
+        # Same row
+        if row1 == row2:
+            encrypted += matrix[row1][(col1 + 1) % 5]
+            encrypted += matrix[row2][(col2 + 1) % 5]
+
+        # Same column
+        elif col1 == col2:
+            encrypted += matrix[(row1 + 1) % 5][col1]
+            encrypted += matrix[(row2 + 1) % 5][col2]
+
+        # Rectangle rule
+        else:
+            encrypted += matrix[row1][col2]
+            encrypted += matrix[row2][col1]
+
+    return encrypted
+
+
+# Given Playfair matrix
+matrix = [
+    ['M', 'F', 'H', 'I', 'K'],
+    ['U', 'N', 'O', 'P', 'Q'],
+    ['Z', 'V', 'W', 'X', 'Y'],
+    ['E', 'L', 'A', 'R', 'G'],
+    ['D', 'S', 'T', 'B', 'C']
+]
+
+# Message
+message = "Must see you over Cadogan West. Coming at once."
+
+# Encrypt
+ciphertext = encrypt_playfair(message, matrix)
+
+print("Encrypted Message:")
+print(ciphertext)
