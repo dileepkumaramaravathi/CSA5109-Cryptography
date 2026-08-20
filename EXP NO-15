@@ -1,0 +1,102 @@
+# Letter Frequency Attack on Additive (Caesar) Cipher
+
+# English letter frequencies (percentage)
+ENGLISH_FREQ = {
+    'E': 12.70,
+    'T': 9.06,
+    'A': 8.17,
+    'O': 7.51,
+    'I': 6.97,
+    'N': 6.75,
+    'S': 6.33,
+    'H': 6.09,
+    'R': 5.99,
+    'D': 4.25,
+    'L': 4.03,
+    'C': 2.78,
+    'U': 2.76,
+    'M': 2.41,
+    'W': 2.36,
+    'F': 2.23,
+    'G': 2.02,
+    'Y': 1.97,
+    'P': 1.93,
+    'B': 1.49,
+    'V': 0.98,
+    'K': 0.77,
+    'J': 0.15,
+    'X': 0.15,
+    'Q': 0.10,
+    'Z': 0.07
+}
+
+
+# Decrypt using a Caesar shift
+def decrypt(ciphertext, key):
+    result = ""
+
+    for ch in ciphertext:
+        if ch.isalpha():
+            value = ord(ch.upper()) - ord('A')
+            value = (value - key) % 26
+            result += chr(value + ord('A'))
+        else:
+            result += ch
+
+    return result
+
+
+# Calculate chi-square score
+def frequency_score(text):
+    letters = [ch for ch in text.upper() if ch.isalpha()]
+
+    if len(letters) == 0:
+        return float("inf")
+
+    score = 0
+    total = len(letters)
+
+    for letter in ENGLISH_FREQ:
+        observed = letters.count(letter)
+
+        expected = (ENGLISH_FREQ[letter] / 100) * total
+
+        if expected > 0:
+            score += ((observed - expected) ** 2) / expected
+
+    return score
+
+
+# Perform frequency attack
+def frequency_attack(ciphertext, top_n):
+    results = []
+
+    for key in range(26):
+        plaintext = decrypt(ciphertext, key)
+        score = frequency_score(plaintext)
+
+        results.append((score, key, plaintext))
+
+    # Lower chi-square score = more likely English
+    results.sort(key=lambda x: x[0])
+
+    return results[:top_n]
+
+
+# -----------------------------
+# Main program
+# -----------------------------
+
+ciphertext = input("Enter ciphertext: ")
+
+top_n = int(input("How many possible plaintexts? "))
+
+results = frequency_attack(ciphertext, top_n)
+
+print("\nPossible Plaintexts:")
+print("--------------------")
+
+for rank, (score, key, plaintext) in enumerate(results, start=1):
+    print(f"\n{rank}. Key = {key}")
+    print(f"   Score = {score:.2f}")
+    print(f"   Plaintext = {plaintext}")
