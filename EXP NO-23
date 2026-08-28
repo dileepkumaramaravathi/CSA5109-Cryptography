@@ -1,0 +1,323 @@
+# S-DES in Counter (CTR) Mode
+# Key       : 01111 11101
+# Counter   : 0000 0000
+# Plaintext : 00000001 00000010 00000100
+# Expected  : 00111000 01001111 00110010
+
+
+# ---------------- S-DES TABLES ----------------
+
+P10 = [3, 5, 2, 7, 4, 10, 1, 9, 8, 6]
+P8  = [6, 3, 7, 4, 8, 5, 10, 9]
+
+IP     = [2, 6, 3, 1, 4, 8, 5, 7]
+IP_INV = [4, 1, 3, 5, 7, 2, 8, 6]
+
+EP = [4, 1, 2, 3, 2, 3, 4, 1]
+P4 = [2, 4, 3, 1]
+
+S0 = [
+    [1, 0, 3, 2],
+    [3, 2, 1, 0],
+    [0, 2, 1, 3],
+    [3, 1, 3, 2]
+]
+
+S1 = [
+    [0, 1, 2, 3],
+    [2, 0, 1, 3],
+    [3, 0, 1, 0],
+    [2, 1, 0, 3]
+]
+
+
+# ---------------- PERMUTATION ----------------
+
+def permute(bits, table):
+    result = ""
+
+    for position in table:
+        result += bits[position - 1]
+
+    return result
+
+
+# ---------------- LEFT SHIFT ----------------
+
+def left_shift(bits, count):
+    return bits[count:] + bits[:count]
+
+
+# ---------------- KEY GENERATION ----------------
+
+def generate_keys(key):
+
+    # P10
+    key = permute(key, P10)
+
+    left = key[:5]
+    right = key[5:]
+
+    # LS-1
+    left = left_shift(left, 1)
+    right = left_shift(right, 1)
+
+    K1 = permute(left + right, P8)
+
+    # LS-2
+    left = left_shift(left, 2)
+    right = left_shift(right, 2)
+
+    K2 = permute(left + right, P8)
+
+    return K1, K2
+
+
+# ---------------- S-BOX ----------------
+
+def sbox(bits, box):
+
+    # Row = first bit + last bit
+    row = int(bits[0] + bits[3], 2)
+
+    # Column = middle two bits
+    column = int(bits[1:3], 2)
+
+    value = box[row][column]
+
+    return format(value, "02b")
+
+
+# ---------------- Fk FUNCTION ----------------
+
+def fk(bits, key):
+
+    left = bits[:4]
+    right = bits[4:]
+
+    # Expansion / Permutation
+    expanded = permute(right, EP)
+
+    # XOR with key
+    xor_result = ""
+
+    for a, b in zip(expanded, key):
+        if a == b:
+            xor_result += "0"
+        else:
+            xor_result += "1"
+
+    # S-Boxes
+    sbox_result = sbox(xor_result[:4], S0)
+    sbox_result += sbox(xor_result[4:], S1)
+
+    # P4
+    p4_result = permute(sbox_result, P4)
+
+    # XOR with left half
+    new_left = ""
+
+    for a, b in zip(left, p4_result):
+        if a == b:
+            new_left += "0"
+        else:
+            new_left += "1"
+
+    return new_left + right
+
+
+# ---------------- S-DES ENCRYPTION ----------------
+
+def sdes_encrypt(plaintext, key):
+
+    K1, K2 = generate_keys(key)
+
+    # Initial Permutation
+    bits = permute(plaintext, IP)
+
+    # Round 1
+    bits = fk(bits, K1)
+
+    # Switch
+    bits = bits[4:] + bits[:4]
+
+    # Round 2
+    bits = fk(bits, K2)
+
+    # Inverse Initial Permutation
+    ciphertext = permute(bits, IP_INV)
+
+    return ciphertext
+
+
+# ---------------- S-DES DECRYPTION ----------------
+
+def sdes_decrypt(ciphertext, key):
+
+    K1, K2 = generate_keys(key)
+
+    # Initial Permutation
+    bits = permute(ciphertext, IP)
+
+    # Round 1 using K2
+    bits = fk(bits, K2)
+
+    # Switch
+    bits = bits[4:] + bits[:4]
+
+    # Round 2 using K1
+    bits = fk(bits, K1)
+
+    # Inverse Initial Permutation
+    plaintext = permute(bits, IP_INV)
+
+    return plaintext
+
+
+# ---------------- XOR FUNCTION ----------------
+
+def xor_bits(a, b):
+
+    result = ""
+
+    for x, y in zip(a, b):
+        if x == y:
+            result += "0"
+        else:
+            result += "1"
+
+    return result
+
+
+# ---------------- CTR ENCRYPTION ----------------
+
+def ctr_encrypt(plaintext_blocks, key):
+
+    ciphertext_blocks = []
+
+    print("\nCTR ENCRYPTION")
+    print("--------------------------------------------")
+    print("Counter   Plaintext   S-DES(Counter)   Ciphertext")
+
+    for counter, plaintext in enumerate(plaintext_blocks):
+
+        # Convert counter to 8-bit binary
+        counter_bits = format(counter, "08b")
+
+        # Encrypt counter using S-DES
+        keystream = sdes_encrypt(counter_bits, key)
+
+        # XOR plaintext with keystream
+        ciphertext = xor_bits(plaintext, keystream)
+
+        ciphertext_blocks.append(ciphertext)
+
+        print(
+            counter_bits,
+            "  ",
+            plaintext,
+            "     ",
+            keystream,
+            "       ",
+            ciphertext
+        )
+
+    return ciphertext_blocks
+
+
+# ---------------- CTR DECRYPTION ----------------
+
+def ctr_decrypt(ciphertext_blocks, key):
+
+    plaintext_blocks = []
+
+    print("\nCTR DECRYPTION")
+    print("--------------------------------------------")
+    print("Counter   Ciphertext   S-DES(Counter)   Plaintext")
+
+    for counter, ciphertext in enumerate(ciphertext_blocks):
+
+        # Same counter is used during decryption
+        counter_bits = format(counter, "08b")
+
+        # Generate same keystream
+        keystream = sdes_encrypt(counter_bits, key)
+
+        # XOR ciphertext with keystream
+        plaintext = xor_bits(ciphertext, keystream)
+
+        plaintext_blocks.append(plaintext)
+
+        print(
+            counter_bits,
+            "  ",
+            ciphertext,
+            "      ",
+            keystream,
+            "       ",
+            plaintext
+        )
+
+    return plaintext_blocks
+
+
+# ================= MAIN PROGRAM =================
+
+def main():
+
+    # 10-bit S-DES key
+    key = "0111111101"
+
+    # Plaintext blocks
+    plaintext = [
+        "00000001",
+        "00000010",
+        "00000100"
+    ]
+
+    print("============================================")
+    print("       S-DES COUNTER (CTR) MODE")
+    print("============================================")
+
+    print("\nKey:")
+    print(key)
+
+    print("\nPlaintext:")
+    print(" ".join(plaintext))
+
+    # Encryption
+    ciphertext = ctr_encrypt(plaintext, key)
+
+    print("\nCiphertext:")
+    print(" ".join(ciphertext))
+
+    # Decryption
+    decrypted = ctr_decrypt(ciphertext, key)
+
+    print("\nDecrypted Plaintext:")
+    print(" ".join(decrypted))
+
+    # Verification
+    expected = [
+        "00111000",
+        "01001111",
+        "00110010"
+    ]
+
+    print("\nExpected Ciphertext:")
+    print(" ".join(expected))
+
+    if ciphertext == expected:
+        print("\n✓ Encryption output is CORRECT")
+    else:
+        print("\n✗ Encryption output does NOT match expected output")
+
+    if decrypted == plaintext:
+        print("✓ Decryption is CORRECT")
+    else:
+        print("✗ Decryption is NOT CORRECT")
+
+
+# Run program
+if __name__ == "__main__":
+    main()
