@@ -1,0 +1,80 @@
+
+def xor_blocks(a, b):
+    return bytes(x ^ y for x, y in zip(a, b))
+# ---------------------------------------------------------
+def E_K(block, key):
+    result = bytearray()
+
+    for i in range(len(block)):
+        result.append(block[i] ^ key[i % len(key)])
+
+    return bytes(result)
+
+
+# ---------------------------------------------------------
+# CBC-MAC
+# ---------------------------------------------------------
+def cbc_mac(key, message_blocks):
+    state = bytes(len(message_blocks[0]))
+
+    for block in message_blocks:
+        state = E_K(xor_blocks(state, block), key)
+
+    return state
+
+
+# ---------------------------------------------------------
+# Secret key
+# ---------------------------------------------------------
+key = b"1234567890123456"
+
+# One-block message X
+X = b"ABCDEFGHIJKLMNOP"
+
+
+# ---------------------------------------------------------
+# Step 1: MAC of X
+# ---------------------------------------------------------
+T = cbc_mac(key, [X])
+
+print("Message X:")
+print("X =", X)
+
+print("\nMAC of X:")
+print("T =", T.hex())
+
+
+# ---------------------------------------------------------
+# Step 2: Adversary calculates X XOR T
+# ---------------------------------------------------------
+X_XOR_T = xor_blocks(X, T)
+
+print("\nX XOR T:")
+print(X_XOR_T.hex())
+
+
+# ---------------------------------------------------------
+# Step 3: Construct X || (X XOR T)
+# ---------------------------------------------------------
+two_block_message = [X, X_XOR_T]
+
+T2 = cbc_mac(key, two_block_message)
+
+print("\nTwo-block message:")
+print("X || (X XOR T)")
+
+print("\nMAC of two-block message:")
+print("T2 =", T2.hex())
+
+
+# ---------------------------------------------------------
+# Step 4: Verify the attack
+# ---------------------------------------------------------
+print("\nResult:")
+
+if T == T2:
+    print("T2 = T")
+    print("CBC-MAC extension attack successful.")
+else:
+    print("T2 != T")
+    print("Attack failed.")
