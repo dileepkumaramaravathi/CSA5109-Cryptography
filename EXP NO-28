@@ -1,0 +1,97 @@
+# Diffie-Hellman Key Exchange
+#
+# Correct method:
+# Alice sends a^x mod q
+# Bob sends a^y mod q
+#
+# Shared key:
+# Alice computes (a^y)^x mod q
+# Bob computes (a^x)^y mod q
+
+# Public values
+a = 5
+q = 23
+
+# Alice's secret number
+x = 6
+
+# Bob's secret number
+y = 15
+
+
+# ---------------------------------------------------------
+# Step 1: Alice and Bob calculate public values
+# ---------------------------------------------------------
+
+A = pow(a, x, q)
+B = pow(a, y, q)
+
+print("Public values:")
+print("a =", a)
+print("q =", q)
+
+print("\nSecret values:")
+print("Alice's secret x =", x)
+print("Bob's secret y   =", y)
+
+print("\nValues exchanged:")
+print("Alice sends A =", A)
+print("Bob sends B   =", B)
+
+
+# ---------------------------------------------------------
+# Step 2: Calculate shared secret
+# ---------------------------------------------------------
+
+key_alice = pow(B, x, q)
+key_bob = pow(A, y, q)
+
+print("\nShared key:")
+print("Alice calculates =", key_alice)
+print("Bob calculates   =", key_bob)
+
+if key_alice == key_bob:
+    print("Key exchange successful.")
+else:
+    print("Key exchange failed.")
+
+
+# ---------------------------------------------------------
+# What if they send x^a and y^a instead?
+# ---------------------------------------------------------
+
+wrong_alice = x ** a
+wrong_bob = y ** a
+
+print("\nIf they send x^a and y^a instead:")
+print("Alice sends x^a =", wrong_alice)
+print("Bob sends y^a   =", wrong_bob)
+
+# Suppose Alice tries to use Bob's value
+wrong_key_alice = wrong_bob ** x
+
+# Bob tries to use Alice's value
+wrong_key_bob = wrong_alice ** y
+
+print("\nValues obtained:")
+print("Alice gets =", wrong_key_alice)
+print("Bob gets   =", wrong_key_bob)
+
+if wrong_key_alice == wrong_key_bob:
+    print("They accidentally obtained the same value.")
+else:
+    print("They do NOT obtain the same shared key.")
+
+
+# ---------------------------------------------------------
+# Eve's situation
+# ---------------------------------------------------------
+
+print("\nEve's attack:")
+print("Eve knows a, q, A and B.")
+print("Eve needs to solve the discrete logarithm:")
+print("x = log_a(A) mod q")
+print("y = log_a(B) mod q")
+
+print("\nWithout finding x or y, Eve cannot normally")
+print("calculate the shared key from A and B.")
