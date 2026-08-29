@@ -1,0 +1,74 @@
+# One-Time Pad version of Vigenere Cipher
+#
+# A = 0, B = 1, ..., Z = 25
+# Key is a stream of random numbers from 0 to 25.
+#
+# Encryption:
+# C = (P + K) mod 26
+#
+# Decryption:
+# P = (C - K) mod 26
+
+
+import random
+
+
+# ---------------------------------------------------------
+# Generate random OTP key
+# ---------------------------------------------------------
+def generate_key(length):
+    return [random.randint(0, 25) for _ in range(length)]
+
+
+# ---------------------------------------------------------
+# Encryption
+# ---------------------------------------------------------
+def encrypt(plaintext, key):
+    ciphertext = ""
+
+    for i in range(len(plaintext)):
+        p = ord(plaintext[i]) - ord('A')
+        c = (p + key[i]) % 26
+        ciphertext += chr(c + ord('A'))
+
+    return ciphertext
+
+
+# ---------------------------------------------------------
+# Decryption
+# ---------------------------------------------------------
+def decrypt(ciphertext, key):
+    plaintext = ""
+
+    for i in range(len(ciphertext)):
+        c = ord(ciphertext[i]) - ord('A')
+        p = (c - key[i]) % 26
+        plaintext += chr(p + ord('A'))
+
+    return plaintext
+
+
+# ---------------------------------------------------------
+# Main program
+# ---------------------------------------------------------
+
+plaintext = "HELLO"
+
+# Generate a random key having the same length as plaintext
+key = generate_key(len(plaintext))
+
+print("Plaintext :", plaintext)
+
+print("Key       :", key)
+
+
+# Encryption
+ciphertext = encrypt(plaintext, key)
+
+print("Ciphertext:", ciphertext)
+
+
+# Decryption
+decrypted = decrypt(ciphertext, key)
+
+print("Decrypted :", decrypted)
