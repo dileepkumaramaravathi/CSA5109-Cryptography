@@ -1,0 +1,54 @@
+# RSA System
+# Public key: e = 31, n = 3599
+
+import math
+
+# Given public key
+e = 31
+n = 3599
+
+# Step 1: Find p and q using trial-and-error
+p = 0
+q = 0
+
+for i in range(2, int(math.sqrt(n)) + 1):
+    if n % i == 0:
+        p = i
+        q = n // i
+        break
+
+print("p =", p)
+print("q =", q)
+
+# Step 2: Calculate Euler's Totient function
+phi = (p - 1) * (q - 1)
+
+print("phi(n) =", phi)
+
+
+# Step 3: Extended Euclidean Algorithm
+def extended_gcd(a, b):
+    if b == 0:
+        return a, 1, 0
+
+    gcd, x1, y1 = extended_gcd(b, a % b)
+
+    x = y1
+    y = x1 - (a // b) * y1
+
+    return gcd, x, y
+
+
+# Find d such that (e * d) % phi = 1
+gcd, x, y = extended_gcd(e, phi)
+
+if gcd != 1:
+    print("Private key does not exist.")
+else:
+    d = x % phi
+
+    print("e =", e)
+    print("d =", d)
+
+    print("\nPublic Key  = (", e, ",", n, ")")
+    print("Private Key = (", d, ",", n, ")")
