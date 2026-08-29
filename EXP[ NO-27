@@ -1,0 +1,42 @@
+
+e = 17
+n = 3233
+
+def rsa_encrypt(m, e, n):
+    return pow(m, e, n)
+
+message = "HELLO"
+
+ciphertext = []
+
+for ch in message:
+    m = ord(ch) - ord('A')
+    c = rsa_encrypt(m, e, n)
+    ciphertext.append(c)
+
+print("Original message :", message)
+print("Encrypted blocks :", ciphertext)
+
+
+lookup_table = {}
+
+for m in range(26):
+    c = rsa_encrypt(m, e, n)
+    lookup_table[c] = m
+
+
+# ---------------------------------------------------------
+# Recover the plaintext
+# ---------------------------------------------------------
+recovered_message = ""
+
+for c in ciphertext:
+
+    if c in lookup_table:
+        m = lookup_table[c]
+        recovered_message += chr(m + ord('A'))
+    else:
+        recovered_message += '?'
+
+
+print("Recovered message:", recovered_message)
