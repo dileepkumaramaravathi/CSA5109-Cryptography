@@ -1,0 +1,175 @@
+# ECB, CBC and CFB Modes
+# Padding:
+# Add one 1-bit (represented here as 0x80) followed by 0-bits
+# until the final block is complete.
+# If the message is already a complete block, add a FULL
+# padding block.
+
+BLOCK_SIZE = 8
+
+
+# ---------------------------------------------------------
+# Padding
+# ---------------------------------------------------------
+def pad(data):
+    padding_length = BLOCK_SIZE - (len(data) % BLOCK_SIZE)
+
+    # If already complete, add a full block
+    if padding_length == 0:
+        padding_length = BLOCK_SIZE
+
+    return data + bytes([0x80]) + bytes(padding_length - 1)
+
+
+# ---------------------------------------------------------
+# Remove padding
+# ---------------------------------------------------------
+def unpad(data):
+    i = len(data) - 1
+
+    while i >= 0 and data[i] == 0:
+        i -= 1
+
+    if i >= 0 and data[i] == 0x80:
+        return data[:i]
+
+    return data
+
+
+# ---------------------------------------------------------
+# Simple educational block cipher
+# ---------------------------------------------------------
+# This is only for demonstrating the modes.
+# It is NOT a real secure cipher.
+# ---------------------------------------------------------
+def encrypt_block(block, key):
+    return bytes(
+        block[i] ^ key[i]
+        for i in range(BLOCK_SIZE)
+    )
+
+
+# ---------------------------------------------------------
+# ECB Mode
+# ---------------------------------------------------------
+def ecb_encrypt(plaintext, key):
+    plaintext = pad(plaintext)
+
+    ciphertext = b""
+
+    for i in range(0, len(plaintext), BLOCK_SIZE):
+        block = plaintext[i:i + BLOCK_SIZE]
+
+        encrypted = encrypt_block(block, key)
+
+        ciphertext += encrypted
+
+    return ciphertext
+
+
+# ---------------------------------------------------------
+# CBC Mode
+# ---------------------------------------------------------
+def cbc_encrypt(plaintext, key, iv):
+    plaintext = pad(plaintext)
+
+    ciphertext = b""
+
+    previous = iv
+
+    for i in range(0, len(plaintext), BLOCK_SIZE):
+        block = plaintext[i:i + BLOCK_SIZE]
+
+        xored = bytes(
+            block[j] ^ previous[j]
+            for j in range(BLOCK_SIZE)
+        )
+
+        encrypted = encrypt_block(xored, key)
+
+        ciphertext += encrypted
+
+        previous = encrypted
+
+    return ciphertext
+
+
+# ---------------------------------------------------------
+# CFB Mode
+# ---------------------------------------------------------
+def cfb_encrypt(plaintext, key, iv):
+    plaintext = pad(plaintext)
+
+    ciphertext = b""
+
+    previous = iv
+
+    for i in range(0, len(plaintext), BLOCK_SIZE):
+
+        block = plaintext[i:i + BLOCK_SIZE]
+
+        encrypted_iv = encrypt_block(previous, key)
+
+        cipher_block = bytes(
+            block[j] ^ encrypted_iv[j]
+            for j in range(BLOCK_SIZE)
+        )
+
+        ciphertext += cipher_block
+
+        previous = cipher_block
+
+    return ciphertext
+
+
+# ---------------------------------------------------------
+# Main program
+# ---------------------------------------------------------
+
+key = b"12345678"
+iv = b"87654321"
+
+# Message is exactly one complete block.
+message = b"ABCDEFGH"
+
+print("Original message:")
+print(message)
+
+# Padding is added even though the message is already
+# a complete block.
+padded_message = pad(message)
+
+print("\nPadded message:")
+print(padded_message)
+
+print("\nNumber of bytes:")
+print("Original =", len(message))
+print("Padded   =", len(padded_message))
+
+
+# ECB
+ecb_result = ecb_encrypt(message, key)
+
+print("\nECB Ciphertext:")
+print(ecb_result.hex())
+
+
+# CBC
+cbc_result = cbc_encrypt(message, key, iv)
+
+print("\nCBC Ciphertext:")
+print(cbc_result.hex())
+
+
+# CFB
+cfb_result = cfb_encrypt(message, key, iv)
+
+print("\nCFB Ciphertext:")
+print(cfb_result.hex())
+
+
+# Remove padding demonstration
+recovered = unpad(padded_message)
+
+print("\nAfter removing padding:")
+print(recovered)
