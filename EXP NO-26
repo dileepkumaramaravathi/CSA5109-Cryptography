@@ -1,0 +1,126 @@
+# RSA Public-Key Encryption Scheme
+# Question:
+# Bob's private key is leaked.
+# Is it safe to generate a new e and d while keeping the same n?
+#
+# Answer: NO.
+# Bob must generate a completely new modulus n.
+
+import math
+
+
+# ---------------------------------------------------------
+# Extended Euclidean Algorithm
+# ---------------------------------------------------------
+def extended_gcd(a, b):
+    if b == 0:
+        return a, 1, 0
+
+    gcd, x1, y1 = extended_gcd(b, a % b)
+
+    x = y1
+    y = x1 - (a // b) * y1
+
+    return gcd, x, y
+
+
+# ---------------------------------------------------------
+# Find modular inverse
+# ---------------------------------------------------------
+def mod_inverse(e, phi):
+    gcd, x, y = extended_gcd(e, phi)
+
+    if gcd != 1:
+        return None
+
+    return x % phi
+
+
+# ---------------------------------------------------------
+# RSA Key Generation
+# ---------------------------------------------------------
+def generate_keys(p, q, e):
+    n = p * q
+    phi = (p - 1) * (q - 1)
+
+    d = mod_inverse(e, phi)
+
+    if d is None:
+        print("Invalid public exponent e.")
+        return None
+
+    return n, phi, e, d
+
+
+# ---------------------------------------------------------
+# RSA Encryption
+# ---------------------------------------------------------
+def encrypt(message, e, n):
+    return pow(message, e, n)
+
+
+# ---------------------------------------------------------
+# RSA Decryption
+# ---------------------------------------------------------
+def decrypt(ciphertext, d, n):
+    return pow(ciphertext, d, n)
+
+
+# =========================================================
+# ORIGINAL KEY PAIR
+# =========================================================
+
+p = 61
+q = 53
+e1 = 17
+
+n, phi, e1, d1 = generate_keys(p, q, e1)
+
+print("Original RSA Keys")
+print("------------------")
+print("p =", p)
+print("q =", q)
+print("n =", n)
+print("phi(n) =", phi)
+print("Public key  = (", e1, ",", n, ")")
+print("Private key = (", d1, ",", n, ")")
+
+
+# =========================================================
+# PRIVATE KEY LEAKS
+# =========================================================
+
+print("\nBob's private key has been leaked!")
+print("Leaked private key =", (d1, n))
+
+
+# =========================================================
+# BOB GENERATES NEW e AND d BUT KEEPS SAME n
+# =========================================================
+
+e2 = 7
+
+d2 = mod_inverse(e2, phi)
+
+print("\nBob generates a new e and d")
+print("--------------------------------")
+print("New public exponent e =", e2)
+print("New private exponent d =", d2)
+print("Same modulus n =", n)
+
+print("\nNew Public Key  = (", e2, ",", n, ")")
+print("New Private Key = (", d2, ",", n, ")")
+
+
+# =========================================================
+# CHECK
+# =========================================================
+
+print("\nSecurity Result")
+print("----------------")
+
+if n == p * q:
+    print("The modulus n is still the same.")
+    print("The attacker can factor n because the old private key was leaked.")
+    print("Therefore, generating only new e and d is NOT SAFE.")
+    print("\nBob must generate a NEW p, NEW q, and NEW n.")
