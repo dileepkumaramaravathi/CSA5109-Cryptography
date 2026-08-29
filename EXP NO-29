@@ -1,0 +1,87 @@
+# SHA-3 Absorption Demonstration
+# Block size (rate) = 1024 bits
+# State size = 1600 bits
+# Lane size = 64 bits
+#
+# Permutation is intentionally ignored.
+# We only track whether each lane contains at least
+# one nonzero bit.
+
+STATE_BITS = 1600
+RATE_BITS = 1024
+LANE_BITS = 64
+
+TOTAL_LANES = STATE_BITS // LANE_BITS
+RATE_LANES = RATE_BITS // LANE_BITS
+CAPACITY_LANES = TOTAL_LANES - RATE_LANES
+
+print("SHA-3 Parameters")
+print("----------------")
+print("State size       =", STATE_BITS, "bits")
+print("Rate             =", RATE_BITS, "bits")
+print("Capacity         =", STATE_BITS - RATE_BITS, "bits")
+print("Lane size        =", LANE_BITS, "bits")
+print("Total lanes      =", TOTAL_LANES)
+print("Rate lanes       =", RATE_LANES)
+print("Capacity lanes   =", CAPACITY_LANES)
+
+# ---------------------------------------------------------
+# Internal state
+# 25 lanes, each initially zero
+# ---------------------------------------------------------
+state = [0] * TOTAL_LANES
+
+# ---------------------------------------------------------
+# First message block P0
+# Every rate lane contains at least one nonzero bit.
+# For simplicity, use 1 as the value of each rate lane.
+# Capacity lanes remain zero.
+# ---------------------------------------------------------
+P0 = [1] * RATE_LANES
+
+# XOR P0 into the rate portion
+for i in range(RATE_LANES):
+    state[i] ^= P0[i]
+
+print("\nAfter absorbing P0:")
+print("Nonzero rate lanes     =",
+      sum(1 for x in state[:RATE_LANES] if x != 0))
+
+print("Nonzero capacity lanes =",
+      sum(1 for x in state[RATE_LANES:] if x != 0))
+
+# ---------------------------------------------------------
+# Ignore the permutation.
+#
+# Absorbing any further message blocks changes only the
+# rate lanes. Therefore, capacity lanes remain zero.
+# ---------------------------------------------------------
+
+for block_number in range(1, 11):
+
+    # A new message block with all rate lanes nonzero
+    message_block = [1] * RATE_LANES
+
+    for i in range(RATE_LANES):
+        state[i] ^= message_block[i]
+
+    nonzero_capacity = sum(
+        1 for x in state[RATE_LANES:] if x != 0
+    )
+
+    print(
+        "After block", block_number + 1,
+        ": nonzero capacity lanes =",
+        nonzero_capacity
+    )
+
+# ---------------------------------------------------------
+# Final conclusion
+# ---------------------------------------------------------
+print("\nConclusion:")
+if all(x != 0 for x in state[RATE_LANES:]):
+    print("All capacity lanes are nonzero.")
+else:
+    print("Capacity lanes are still zero.")
+    print("They will NEVER become nonzero when the permutation")
+    print("is ignored.")
