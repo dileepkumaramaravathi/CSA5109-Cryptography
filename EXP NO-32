@@ -1,0 +1,118 @@
+# DSA vs RSA Signature Demonstration
+# Same message is signed twice.
+
+import hashlib
+import random
+
+
+# ---------------------------------------------------------
+# DSA parameters
+# ---------------------------------------------------------
+p = 809
+q = 101
+g = 256
+
+# Private key
+x = 37
+
+# Public key
+y = pow(g, x, p)
+
+
+# ---------------------------------------------------------
+# Hash function
+# ---------------------------------------------------------
+def hash_message(message):
+    return int(hashlib.sha256(message.encode()).hexdigest(), 16)
+
+
+# ---------------------------------------------------------
+# DSA Signature
+# ---------------------------------------------------------
+def dsa_sign(message):
+    H = hash_message(message) % q
+
+    # New random k for every signature
+    while True:
+        k = random.randint(1, q - 1)
+
+        r = pow(g, k, p) % q
+
+        if r == 0:
+            continue
+
+        k_inverse = pow(k, -1, q)
+
+        s = (k_inverse * (H + x * r)) % q
+
+        if s != 0:
+            return r, s, k
+
+
+# ---------------------------------------------------------
+# RSA Signature Demonstration
+# ---------------------------------------------------------
+# Small educational RSA parameters
+p_rsa = 61
+q_rsa = 53
+
+n_rsa = p_rsa * q_rsa
+phi_rsa = (p_rsa - 1) * (q_rsa - 1)
+
+e_rsa = 17
+
+# RSA private key
+d_rsa = pow(e_rsa, -1, phi_rsa)
+
+
+def rsa_sign(message):
+    H = hash_message(message) % n_rsa
+
+    # Deterministic RSA signature demonstration
+    signature = pow(H, d_rsa, n_rsa)
+
+    return signature
+
+
+# ---------------------------------------------------------
+# Main Program
+# ---------------------------------------------------------
+
+message = "HELLO"
+
+
+# DSA: sign same message twice
+r1, s1, k1 = dsa_sign(message)
+r2, s2, k2 = dsa_sign(message)
+
+print("Message:", message)
+
+print("\nDSA Signatures")
+print("----------------")
+print("First signature:")
+print("k =", k1)
+print("(r, s) =", (r1, s1))
+
+print("\nSecond signature:")
+print("k =", k2)
+print("(r, s) =", (r2, s2))
+
+if (r1, s1) != (r2, s2):
+    print("\nDSA signatures are DIFFERENT.")
+else:
+    print("\nDSA signatures are SAME.")
+
+
+# RSA: sign same message twice
+rsa_sig1 = rsa_sign(message)
+rsa_sig2 = rsa_sign(message)
+
+print("\nRSA Signatures")
+print("----------------")
+print("First signature  =", rsa_sig1)
+print("Second signature =", rsa_sig2)
+
+if rsa_sig1 == rsa_sig2:
+    print("\nRSA signatures are SAME.")
+else:
+    print("\nRSA signatures are DIFFERENT.")
