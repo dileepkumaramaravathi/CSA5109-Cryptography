@@ -1,0 +1,65 @@
+# CMAC Subkey Generation
+
+def left_shift(value, block_size):
+    return (value << 1) & ((1 << block_size) - 1)
+
+
+def generate_subkey(L, block_size, Rb):
+    # Check MSB
+    msb = (L >> (block_size - 1)) & 1
+
+    # Left shift by 1 bit
+    K = left_shift(L, block_size)
+
+    # Conditional XOR with Rb
+    if msb == 1:
+        K = K ^ Rb
+
+    return K
+
+
+def cmac_subkeys(L, block_size, Rb):
+    K1 = generate_subkey(L, block_size, Rb)
+    K2 = generate_subkey(K1, block_size, Rb)
+
+    return K1, K2
+
+
+# --------------------------------------------------
+# 64-bit block
+# Rb = 0x1B
+# --------------------------------------------------
+
+L64 = 0x123456789ABCDEF0
+
+K1_64, K2_64 = cmac_subkeys(
+    L64,
+    64,
+    0x1B
+)
+
+print("64-bit Block")
+print("L  =", format(L64, "016X"))
+print("Rb =", format(0x1B, "02X"))
+print("K1 =", format(K1_64, "016X"))
+print("K2 =", format(K2_64, "016X"))
+
+
+# --------------------------------------------------
+# 128-bit block
+# Rb = 0x87
+# --------------------------------------------------
+
+L128 = 0x123456789ABCDEF0123456789ABCDEF0
+
+K1_128, K2_128 = cmac_subkeys(
+    L128,
+    128,
+    0x87
+)
+
+print("\n128-bit Block")
+print("L  =", format(L128, "032X"))
+print("Rb =", format(0x87, "02X"))
+print("K1 =", format(K1_128, "032X"))
+print("K2 =", format(K2_128, "032X"))
