@@ -1,0 +1,50 @@
+# Affine Caesar Cipher
+
+import math
+
+def encrypt(text, a, b):
+    result = ""
+
+    for ch in text:
+        if ch.isalpha():
+            p = ord(ch.upper()) - ord('A')
+            c = (a * p + b) % 26
+            result += chr(c + ord('A'))
+        else:
+            result += ch
+
+    return result
+
+
+def decrypt(ciphertext, a, b):
+    result = ""
+
+    # Find modular inverse of a
+    a_inv = pow(a, -1, 26)
+
+    for ch in ciphertext:
+        if ch.isalpha():
+            c = ord(ch.upper()) - ord('A')
+            p = (a_inv * (c - b)) % 26
+            result += chr(p + ord('A'))
+        else:
+            result += ch
+
+    return result
+
+
+# Input
+text = input("Enter plaintext: ")
+a = int(input("Enter value of a: "))
+b = int(input("Enter value of b: "))
+
+# Check whether a is valid
+if math.gcd(a, 26) != 1:
+    print("Invalid value of a!")
+    print("a must be relatively prime to 26.")
+else:
+    encrypted = encrypt(text, a, b)
+    decrypted = decrypt(encrypted, a, b)
+
+    print("Encrypted text:", encrypted)
+    print("Decrypted text:", decrypted)
